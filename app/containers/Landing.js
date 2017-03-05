@@ -4,30 +4,100 @@ import Title from 'components/Title'
 import Webcam from 'components/Webcam'
 import { postRequest } from 'utils/fetch'
 import { LineChart, Line, BarChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Bar } from 'recharts'
+import ReactHighcharts from 'react-highcharts'
 const emotionData = { "Angry": 0.1240934516, "Sad": 0.391903375, "Neutral": 0.1427304191, "Surprise": 0.1225001438, "Fear": 0.1069961407, "Happy": 0.1117764698 }
+
+
+const options = {
+    chart: {
+        type: 'area'
+        }
+    ,
+    title: {
+        text: 'Emotional Impact of Ad Based on Current Facial State'
+    },
+    subtitle: {
+        text: 'Source: Indico API'
+    },
+    xAxis: {
+        type: 'datetime',
+        tickPixelInterval: 1000
+    },
+    yAxis: {
+        title: {
+            text: 'Percent'
+        }
+    },
+    tooltip: {
+        formatter: function () {
+                        return '<b>' + this.series.name + '</b><br/>' +
+                            ReactHighcharts.Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
+                            ReactHighcharts.Highcharts.numberFormat(this.y, 2);
+                    }
+    },
+    plotOptions: {
+        area: {
+            stacking: 'percent',
+            lineColor: '#ffffff',
+            lineWidth: 1,
+            marker: {
+                lineWidth: 1,
+                lineColor: '#ffffff'
+            }
+        }
+    },
+    series: [{
+        name: 'Angry',
+        data: []
+    }, {
+        name: 'Sad',
+        data: []
+    }, {
+        name: 'Neutral',
+        data: []
+    }, {
+        name: 'Fear',
+        data: []
+    }, {
+        name: 'Surprise',
+        data: []
+    }, {
+        name: 'Happy',
+        data: []
+    }
+    ]
+}
 
 class Landing extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
       screenshot: null,
-      emotions: []
+      emotions: [],
+      start: false
     }
   }
 
   componentDidMount() {
     setInterval(() => {
       if(this.state.start) {
-        console.log('working')
-          const image = {
+        const image = {
           image: this.refs.webcam.getScreenshot()
         }
         const fetchEmotion = postRequest('/emotion', image, (err) => console.log(err))
         .then((result) => {
+          let chart = this.refs.chart.getChart();
+          let [Angry, Sad, Neutral, Fear, Surprise, Happy] = chart.series
+          console.log(chart.series)
+          const date = (new Date()).getTime()
           const emotions = result.data.result
-          this.setState({
-            emotions: [...this.state.emotions, emotions]
-          })
+          console.log(date, emotions)
+          Angry.addPoint({x: date, y: emotions.Angry})
+          Sad.addPoint({x: date, y: emotions.Sad})
+          Neutral.addPoint({x: date, y:emotions.Neutral})
+          Surprise.addPoint({x: date, y: emotions.Surprise})
+          Fear.addPoint({x: date, y: emotions.Fear})
+          Happy.addPoint({x: date, y: emotions.Happy})
         })
       }
     }, 5000)
@@ -44,23 +114,7 @@ class Landing extends React.Component {
         <Title>hello universe.</Title>
         <Webcam screenshotFormat="image/png" height={300} width={300} audio={false} ref="webcam"/>
         <button onClick={this.capture}>Capture</button>
-
-        { this.state.emotions ?
-        <LineChart width={730} height={250} data={this.state.emotions}
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-          <XAxis dataKey="time" />
-          <YAxis />
-          <CartesianGrid strokeDasharray="3 3" />
-          <Tooltip />
-          <Legend />
-          <Line type="monotone" dataKey="Angry" stroke="#8884d8" />
-          <Line type="monotone" dataKey="Sad" stroke="#8884d8" />
-          <Line type="monotone" dataKey="Surprise" stroke="#8884d8" />
-          <Line type="monotone" dataKey="Fear" stroke="#8884d8" />
-          <Line type="monotone" dataKey="Neutral" stroke="#8884d8" />
-          <Line type="monotone" dataKey="Happy" stroke="#8884d8" />
-        </LineChart>
-         : null }
+        <ReactHighcharts config={options} ref="chart" />
       </div>
     )
   }

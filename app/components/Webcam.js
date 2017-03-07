@@ -4,8 +4,8 @@
 *
 */
 
-import React, { Component, PropTypes } from 'react';
-import { findDOMNode } from 'react-dom';
+import React, { Component, PropTypes } from 'react'
+import { findDOMNode } from 'react-dom'
 
 function hasGetUserMedia() {
   return !!(navigator.getUserMedia || navigator.webkitGetUserMedia ||
